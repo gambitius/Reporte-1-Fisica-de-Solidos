@@ -1,0 +1,1 @@
+cp /opt/Pseudo-VASP6/PAW_PBE/Ir/POTCAR .
