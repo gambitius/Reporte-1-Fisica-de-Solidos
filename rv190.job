@@ -1,0 +1,64 @@
+#!/bin/bash
+#SBATCH --job-name="Ir-190"
+#SBATCH -N 1
+#SBATCH --ntasks-per-node=8 # max=88
+#SBATCH --output=vasp_impi-srun.out #aqui redirecciona la salida automatico
+#SBATCH --error=vasp_impi-srun.err
+#SBATCH --time=01:00:00
+#SBATCH --get-user-env
+
+#module purge
+#module load intel/2020b
+#source /opt/intel/impi/2019.8.254/intel64/bin/mpivars.sh
+module load mkl/latest
+module load mpi/latest
+
+export I_MPI_PMI_LIBRARY=libpmi2.so
+
+
+BIN="/opt/bin/vasp_std"
+
+for a in 3.82 3.83 3.84 3.85 3.86 3.87 3.88 3.89 3.90
+do
+    mkdir $a
+    cp POTCAR $a/
+    cd $a
+    echo “a = $a”
+cat >INCAR << end
+# INCAR from here to ‘end’
+SYSTEM = Ir-FCC-lattice
+ENCUT = 190
+# set ENCUT at 190 eV
+ISMEAR = 1
+SIGMA = 0.1
+PREC = normal
+ALGO = FAST
+end
+cat >KPOINTS << kend
+k-points
+0
+M
+9 9 9
+0 0 0
+kend
+# KPOINTS from here to ‘kend’
+cat >POSCAR << !
+Ir-FCC-lattice
+$a
+1.0000000000000000 0.0000000000000000 0.0000000000000000
+0.0000000000000000 1.0000000000000000 0.0000000000000000
+0.0000000000000000 0.0000000000000000 1.0000000000000000
+4
+Direct
+0.0 0.0 0.0
+0.5 0.5 0.0
+0.5 0.0 0.5
+0.0 0.5 0.5
+!
+srun $BIN
+E=`tail -1 OSZICAR`
+# take the last line of the OSZICAR file
+echo $a $E >> ../Ir-lattice-190-E.dat
+# write a and E in the .dat file
+cd ../
+done
